@@ -1,0 +1,40 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "ai-cinema-shorts"
+version = "0.1.0"
+description = "Local-first, resumable cinematic short generator for Apple Silicon"
+requires-python = ">=3.12,<3.15"
+dependencies = [
+    "pydantic>=2.11,<3",
+    "typer>=0.16,<1",
+    "httpx>=0.28,<1",
+    "PyYAML>=6,<7",
+    "Pillow>=11,<13",
+    "numpy>=2,<3",
+    "soundfile>=0.13,<1",
+    "kokoro-onnx>=0.4,<1",
+    "mlx-vlm>=0.7.6",
+    "mlx-whisper>=0.4.3",
+    "opencv-python-headless>=5.0.0.93",
+    "psutil>=7.2.2",
+    "pyobjc-framework-vision>=12.2.2",
+    "pyobjc-framework-quartz>=12.2.2",
+    "transformers>=5.19.0",
+    "torch>=2.14.1",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8,<10"]
+
+[project.scripts]
+cinema = "cinema.cli:app"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/cinema"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]

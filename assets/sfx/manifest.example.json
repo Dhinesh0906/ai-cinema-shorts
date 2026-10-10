@@ -1,0 +1,8 @@
+[
+  {
+    "name": "rain",
+    "file": "rain.wav",
+    "source": "Enter the source URL or your own recording credit",
+    "license": "Enter the actual license or 'self-recorded'"
+  }
+]

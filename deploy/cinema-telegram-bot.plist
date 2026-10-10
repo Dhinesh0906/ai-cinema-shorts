@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!-- Always-on Telegram bot (launchd). Replace __PROJECT__ and __HOME__, copy to
+     ~/Library/LaunchAgents/local.cinema-telegram-bot.plist, then:
+     launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/local.cinema-telegram-bot.plist -->
+<plist version="1.0">
+<dict>
+  <key>Label</key><string>local.cinema-telegram-bot</string>
+  <key>ProgramArguments</key>
+  <array><string>__PROJECT__/.venv/bin/python</string><string>-m</string><string>cinema.cli</string><string>bot</string></array>
+  <key>WorkingDirectory</key><string>__PROJECT__</string>
+  <key>EnvironmentVariables</key>
+  <dict>
+    <key>PYTHONPATH</key><string>__PROJECT__/src</string>
+    <key>PATH</key><string>__HOME__/.local/bin:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
+    <key>HOME</key><string>__HOME__</string>
+  </dict>
+  <key>RunAtLoad</key><true/>
+  <key>KeepAlive</key><true/>
+  <key>ThrottleInterval</key><integer>10</integer>
+  <key>StandardOutPath</key><string>__PROJECT__/logs/telegram_bot.log</string>
+  <key>StandardErrorPath</key><string>__PROJECT__/logs/telegram_bot.log</string>
+</dict>
+</plist>
