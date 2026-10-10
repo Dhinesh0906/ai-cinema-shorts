@@ -74,7 +74,7 @@ takes about 2–3 h including validation and redos. It's best run overnight.
 brew install ffmpeg
 curl -LsSf https://astral.sh/uv/install.sh | sh        # if you don't have uv
 
-git clone https://github.com/<you>/ai-cinema-shorts.git
+git clone https://github.com/Dhinesh0906/ai-cinema-shorts.git
 cd ai-cinema-shorts
 uv sync --extra dev
 uv run cinema setup              # creates folders + config.yaml, installs mlx-gen
