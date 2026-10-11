@@ -11,6 +11,7 @@ import re
 from pydantic import BaseModel, Field
 
 from ..config import Config
+from ..storage.files import output_dir
 
 DISCLOSURE = "Original fiction. Visuals, voices and sound were generated with AI."
 
@@ -36,7 +37,7 @@ def _fallback(story: dict) -> ReachMeta:
 
 
 def build(cfg: Config, job_id: str) -> dict:
-    out = cfg.root / "outputs" / job_id
+    out = output_dir(cfg.root, job_id)
     cache = out / "publish_meta_v2.json"
     if cache.exists():
         return json.loads(cache.read_text())

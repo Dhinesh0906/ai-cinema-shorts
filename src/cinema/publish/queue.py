@@ -14,6 +14,7 @@ from contextlib import contextmanager
 from pathlib import Path
 
 from ..config import Config
+from ..storage.files import output_dir
 
 GAP_S = 2 * 3600
 RETRY_S = 30 * 60
@@ -105,7 +106,7 @@ def recover_stuck(cfg: Config) -> list[dict]:
 
 
 def publish_item(cfg: Config, item: dict) -> dict:
-    out = cfg.root / "outputs" / item["job_id"]
+    out = output_dir(cfg.root, item["job_id"])
     video = out / "final.mp4"
     if not video.exists():
         raise FileNotFoundError(f"{video} missing")

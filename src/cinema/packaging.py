@@ -11,7 +11,7 @@ from .model_registry import refresh
 from .pipeline.context import Ctx
 from .schemas import EDL, Screenplay
 from .state_machine import JobState
-from .storage.files import atomic_json, read_json, sha256
+from .storage.files import atomic_json, name_output_dir, output_dir, read_json, sha256
 from .video.motion_analysis import stream_info
 
 DISCLOSURE = ("This is an original fictional short film. Visuals, voices, sound and music were generated with AI "
@@ -66,7 +66,7 @@ def _path(ctx: Ctx, aid: str) -> str | None:
 
 
 def package(ctx: Ctx, sp: Screenplay, report: dict, failed: bool = False) -> Path:
-    out = ctx.cfg.root / "outputs" / ctx.job_id
+    out = output_dir(ctx.cfg.root, ctx.job_id)
     out.mkdir(parents=True, exist_ok=True)
     _common(ctx, out, sp)
     edl = EDL.model_validate(read_json(ctx.dirs.edit / "edit_decision_list.json"))
@@ -90,6 +90,7 @@ def package(ctx: Ctx, sp: Screenplay, report: dict, failed: bool = False) -> Pat
     (out / "youtube_title.txt").write_text(meta["title"].strip() + "\n")
     (out / "youtube_description.txt").write_text(meta["description"].strip() + "\n\n" + DISCLOSURE + "\n\n#Shorts\n")
     atomic_json(out / "youtube_tags.json", meta["tags"])
+    out = name_output_dir(ctx.cfg.root, ctx.job_id, meta["title"])  # outputs/'2026-10-10 Title'/
     clips = [ctx.asset(f"clip:{s.id}") for s in sp.shots]
     info = stream_info(out / "final.mp4")
     atomic_json(out / "render_metadata.json", {
@@ -124,7 +125,7 @@ def _peaks(runs: list[dict]) -> dict:
 
 
 def failure_report(ctx: Ctx, status: JobState, reason: str) -> Path:
-    out = ctx.cfg.root / "outputs" / ctx.job_id
+    out = output_dir(ctx.cfg.root, ctx.job_id)
     out.mkdir(parents=True, exist_ok=True)
     assets = ctx.db.assets(ctx.job_id)
     bad = [a for a in assets if a["status"] in ("BLOCKED", "FAILED", "RETRY_PENDING")]

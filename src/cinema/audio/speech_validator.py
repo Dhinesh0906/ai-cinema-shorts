@@ -66,8 +66,24 @@ def align(ref: list[str], hyp: list[str]) -> tuple[int, list[str], list[str], li
     return d[n][m], dels[::-1], ins[::-1], subs[::-1]
 
 
-def compare(expected: str, transcript: str) -> dict:
+def sound_key(word: str) -> str:
+    """Crude phonetic key for invented names: Kael = Kale = Cael = Kayel -> 'kl'."""
+    w = re.sub(r"[^a-z]", "", word.lower())
+    if not w:
+        return ""
+    for a, b in (("ph", "f"), ("ck", "k"), ("q", "k"), ("c", "k"), ("z", "s"), ("x", "ks")):
+        w = w.replace(a, b)
+    w = w[0] + re.sub(r"[aeiouyhw]", "", w[1:])
+    return re.sub(r"(.)\1+", r"\1", w)
+
+
+def compare(expected: str, transcript: str, names: list[str] | tuple[str, ...] = ()) -> dict:
+    """names: invented proper nouns (characters, places). Whisper can't know their spelling, so a heard word
+    that sounds like one (same phonetic key) counts as that name."""
     ref, hyp = norm_words(expected), norm_words(transcript)
+    keys = {sound_key(n): n for name in names for n in norm_words(name) if len(n) >= 3}
+    hyp = [w if w in ref or sound_key(w) not in keys or keys[sound_key(w)] not in ref else keys[sound_key(w)]
+           for w in hyp]
     edits, dels, ins, subs = align(ref, hyp)
     wer = edits / max(1, len(ref))
     missing_content = [w for w in dels if w not in STOP] + [r for r, _ in subs if r not in STOP]

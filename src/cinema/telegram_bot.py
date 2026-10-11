@@ -26,6 +26,7 @@ from pydantic import BaseModel
 
 from .config import Config, load_config
 from .storage.database import DB
+from .storage.files import output_dir
 
 log = logging.getLogger("cinema.bot")
 TERMINAL = {"COMPLETE", "BLOCKED", "FAILED"}
@@ -331,7 +332,12 @@ class Bot:
     def cmd_publish(self, args: list[str]) -> None:
         from .publish import queue as pq
         done = [j for j in self.db.jobs() if j["status"] == "COMPLETE"
-                and (self.cfg.root / "outputs" / j["id"] / "final.mp4").exists()]
+                and (output_dir(self.cfg.root, j["id"]) / "final.mp4").exists()]
+        jobs = self.db.jobs()
+        if not args and jobs and jobs[0] not in done:  # never silently fall back to an older film
+            self.send(f"⏳ Your newest film ({jobs[0]['id']}) isn't finished yet ({jobs[0]['status']}). Send publish "
+                      f"again when it's done. To publish an older film, send: publish <job id>")
+            return
         job = next((j for j in done if args and j["id"] == args[0]), done[0] if done and not args else None)
         if not job:
             self.send("No finished film to publish." if not args else f"No finished film {args[0]}.")
@@ -340,7 +346,7 @@ class Bot:
         if all((job["id"], p) in queued for p in self.cfg.publish_platforms):
             self.send(f"{job['id']} is already queued/published. Send queue.")
             return
-        title_p = self.cfg.root / "outputs" / job["id"] / "youtube_title.txt"
+        title_p = output_dir(self.cfg.root, job["id"]) / "youtube_title.txt"
         title = title_p.read_text().strip() if title_p.exists() else job["id"]
         missing = self.missing_publish_creds()
         warn = ("\n⚠️ Not set up yet: " + "; ".join(missing) + " — it will wait in the queue until they exist."
@@ -496,7 +502,7 @@ class Bot:
                     os.kill(pid, signal.SIGKILL)
                 except ProcessLookupError:
                     pass
-        for d in (self.cfg.root / "projects" / job_id, self.cfg.root / "outputs" / job_id):
+        for d in (self.cfg.root / "projects" / job_id, output_dir(self.cfg.root, job_id)):
             if d.exists():
                 shutil.rmtree(d)
         with self.db.conn() as c:
@@ -560,7 +566,7 @@ class Bot:
             time.sleep(30)
 
     def notify(self, j: dict) -> None:
-        out = self.cfg.root / "outputs" / j["id"]
+        out = output_dir(self.cfg.root, j["id"])
         if j["status"] == "COMPLETE":
             sp = self.cfg.root / "projects" / j["id"] / "script" / "screenplay.json"
             if sp.exists():

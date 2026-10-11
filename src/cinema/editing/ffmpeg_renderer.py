@@ -31,7 +31,7 @@ def build_command(edl: EDL, out: Path, workdir: Path, burn_captions: bool = True
         seg = v["out"] - v["in"]
         chain = (f"[{i}:v]trim=start={v['in']}:end={v['out']},setpts=PTS-STARTPTS,fps={fps},"
                  f"scale={W}:{H}:force_original_aspect_ratio=increase:flags=lanczos,crop={W}:{H},setsar=1,"
-                 f"{grade},format=yuv420p")
+                 f"{grade},format=yuv420p,settb=1/{fps}")
         if v["transition_in"] == "fade_from_black" and v["transition_seconds"] > 0:
             chain += f",fade=t=in:st=0:d={v['transition_seconds']}"
         nxt = edl.video[i + 1] if i + 1 < n else None
@@ -55,7 +55,8 @@ def build_command(edl: EDL, out: Path, workdir: Path, burn_captions: bool = True
                            f"offset={cur_len - v['overlap']:.3f}{label}")
             cur_len = cur_len - v["overlap"] + seg
         else:
-            filters.append(f"{cur}[v{i}]concat=n=2:v=1:a=0{label}")
+            # concat outputs a 1/1000000 timebase; xfade needs both inputs on the same one
+            filters.append(f"{cur}[v{i}]concat=n=2:v=1:a=0,settb=1/{fps}{label}")
             cur_len += seg
         cur = label
     vlabel = cur

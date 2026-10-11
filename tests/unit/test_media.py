@@ -109,3 +109,16 @@ def test_shorts_caption_track(tmp_path):
     out = build_track(caps, 3.0, tmp_path / "c.mov")
     info = stream_info(out)
     assert (info["width"], info["height"]) == (1080, 1920) and abs(info["duration"] - 3.0) < 0.1
+
+
+def test_render_crossfade_after_a_hard_cut(cfg, tmp_path):
+    """Regression: concat (cut) then xfade failed with a timebase mismatch (1/1000000 vs 1/fps)."""
+    sp, media, speech, sounds = _edl_inputs(tmp_path)
+    plan = default_plan(sp, media, 12)
+    plan.shots[1].transition_in = "cut"
+    plan.shots[2].transition_in = "crossfade"
+    plan.shots[2].transition_seconds = 0.4
+    edl = resolve("j", plan, sp, media, speech, sounds, "deterministic_fallback", 9, 15)
+    out = tmp_path / "final.mp4"
+    render(edl, out, tmp_path / "work", tmp_path / "render.log", burn_captions=True)
+    assert abs(stream_info(out)["duration"] - edl.duration) < 0.15

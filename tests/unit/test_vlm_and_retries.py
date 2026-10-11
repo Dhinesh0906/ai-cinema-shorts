@@ -191,3 +191,10 @@ def test_video_stage_ships_best_of_after_max_attempts(cfg, monkeypatch):
     for s in sp.shots:
         a = orch.db.asset(job, f"clip:{s.id}")
         assert a["status"] == "PASSED" and a["meta"]["best_of"] and (ctx.dirs.clips / f"{s.id}.mp4").exists()
+
+
+def test_speech_check_accepts_sound_alike_invented_names():
+    from cinema.audio.speech_validator import compare
+    assert compare("Kael lived for the find.", "Kale lived for the find.", ["Kael"])["wer"] == 0.0
+    assert compare("Kael lived for the find.", "Kale lived for the find.")["wer"] == 0.2      # no names: strict
+    assert compare("Kael lived for the find.", "Kale lived for the fire.", ["Kael"])["missing_content_words"] == ["find"]

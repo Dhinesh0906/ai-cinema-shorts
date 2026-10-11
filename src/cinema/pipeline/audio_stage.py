@@ -120,10 +120,12 @@ def speech(ctx: Ctx, sp: Screenplay) -> Screenplay:
 
         # ---------------- independent Whisper transcription
         ctx.state(JobState.VALIDATING_AUDIO)
+        names = [c.name for c in sp.story.characters] + [loc.name for loc in sp.story.locations]
         for ln, _, _ in jobs:
             ctx.to(f"speech:{ln.asset_id}", AssetState.VALIDATING)
         wres = batch_worker(ctx.rm, cfg, "whisper", "whisper", cfg.models.whisper, {"model": cfg.models.whisper},
-                            [{"id": ln.asset_id, "audio": str(out)} for ln, _, out in jobs if out.exists()],
+                            [{"id": ln.asset_id, "audio": str(out), "prompt": ", ".join(names) + "."}
+                             for ln, _, out in jobs if out.exists()],
                             ctx.dirs.work / "whisper", ctx.job_id)
         for ln, spd, out in jobs:
             aid = f"speech:{ln.asset_id}"
@@ -138,7 +140,7 @@ def speech(ctx: Ctx, sp: Screenplay) -> Screenplay:
                     problems.append(f"whisper failed: {w.get('error')}")
                     cmp = {}
                 else:
-                    cmp = compare(ln.text, w["text"])
+                    cmp = compare(ln.text, w["text"], names)
                     if cmp["wer"] > t.max_wer:
                         problems.append(f"WER {cmp['wer']:.2f} > {t.max_wer}")
                     if cmp["missing_content_words"]:

@@ -47,3 +47,20 @@ def test_bfs_path_through_states(cfg, tmp_path):
     assert _path(AssetState.PASSED, AssetState.GENERATING) == [AssetState.PASSED, AssetState.PENDING,
                                                                AssetState.GENERATING]
     assert _path(AssetState.VALIDATING, AssetState.GENERATING)[-1] == AssetState.GENERATING
+
+
+def test_output_folder_named_by_date_and_title(tmp_path):
+    from cinema.storage.files import film_dir_name, name_output_dir, output_dir
+    jid = "20261010-161124-07da36"
+    assert film_dir_name(jid, "Mirror: Part/2?") == "2026-10-10 Mirror Part2"           # filesystem-safe
+    assert film_dir_name(jid, "The Mirror That Sees the Future 🪞") == "2026-10-10 The Mirror That Sees the Future"
+    legacy = tmp_path / "outputs" / jid
+    legacy.mkdir(parents=True)
+    (legacy / "final.mp4").write_bytes(b"v")
+    assert output_dir(tmp_path, jid) == legacy                      # before packaging: job-id folder
+    named = name_output_dir(tmp_path, jid, "The Mirror That Sees the Future 🪞")
+    assert named.name == "2026-10-10 The Mirror That Sees the Future" and not legacy.exists()
+    assert output_dir(tmp_path, jid) == named and (named / "final.mp4").exists()
+    assert name_output_dir(tmp_path, jid, "The Mirror That Sees the Future") == named   # idempotent
+    other = name_output_dir(tmp_path, "20261010-170000-aaaaaa", "The Mirror That Sees the Future")
+    assert other.name == "2026-10-10 The Mirror That Sees the Future (2)"           # same title, other film

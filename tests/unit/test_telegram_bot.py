@@ -200,3 +200,13 @@ def test_paused_state_transitions():
 def test_default_publishes_youtube_only(cfg):
     from cinema.publish import queue as pq
     assert [i["platform"] for i in pq.enqueue(cfg, "D", now=1.0)] == ["youtube"]   # Instagram is posted by hand
+
+
+def test_publish_never_falls_back_to_an_older_film(bot):
+    _job(bot, "old1", "COMPLETE")
+    (bot.cfg.root / "outputs" / "old1" / "final.mp4").write_bytes(b"x")
+    import time as _t
+    _t.sleep(1.1)
+    _job(bot, "new1", "BLOCKED")
+    bot.handle("publish")
+    assert bot.pending_publish is None and "isn't finished" in bot.sent[-1]

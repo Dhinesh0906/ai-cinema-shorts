@@ -4,7 +4,9 @@ from __future__ import annotations
 import hashlib
 import json
 import os
+import re
 import tempfile
+import time
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -95,3 +97,38 @@ class JobDirs:
     def temp(self) -> Path: return self.sub("temp")
     @property
     def work(self) -> Path: return self.sub("work")
+
+
+# ---------------------------------------------------------------- film output folders
+_UNSAFE = re.compile(r"[^\w\s\-'&,.!()]")  # drops emoji, slashes, colons ...
+
+
+def film_dir_name(job_id: str, title: str) -> str:
+    """'2026-10-10 The Mirror That Sees the Future' (date from the job id, which is local time)."""
+    date = f"{job_id[:4]}-{job_id[4:6]}-{job_id[6:8]}" if re.match(r"\d{8}-", job_id) else time.strftime("%Y-%m-%d")
+    clean = re.sub(r"\s+", " ", _UNSAFE.sub("", title)).strip(" .")[:80]
+    return f"{date} {clean or job_id}"
+
+
+def output_dir(root: Path, job_id: str) -> Path:
+    """A job's output folder: named 'date title' once packaged (tagged by a .job_id file), else outputs/JOB_ID."""
+    base = root / "outputs"
+    if (base / job_id).exists():
+        return base / job_id
+    for tag in base.glob("*/.job_id") if base.exists() else []:
+        if tag.read_text().strip() == job_id:
+            return tag.parent
+    return base / job_id
+
+
+def name_output_dir(root: Path, job_id: str, title: str) -> Path:
+    """Move a job's output folder to its 'date title' name (suffix ' (2)' if another film took it)."""
+    cur, stem = output_dir(root, job_id), film_dir_name(job_id, title)
+    target, n = root / "outputs" / stem, 2
+    while target.exists() and target != cur:
+        target, n = root / "outputs" / f"{stem} ({n})", n + 1
+    if cur.exists() and cur != target:
+        cur.rename(target)
+    target.mkdir(parents=True, exist_ok=True)
+    (target / ".job_id").write_text(job_id)
+    return target

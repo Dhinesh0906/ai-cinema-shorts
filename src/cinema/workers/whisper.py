@@ -14,7 +14,8 @@ def factory(opts: dict):
 
     def handle(item: dict) -> dict:
         r = mlx_whisper.transcribe(item["audio"], path_or_hf_repo=repo, language="en", word_timestamps=True,
-                                   condition_on_previous_text=False, temperature=0.0)
+                                   condition_on_previous_text=False, temperature=0.0,
+                                   initial_prompt=item.get("prompt") or None)
         words = [{"word": w["word"].strip(), "start": round(w["start"], 3), "end": round(w["end"], 3),
                   "probability": round(w.get("probability", 0.0), 3)}
                  for seg in r.get("segments", []) for w in seg.get("words", [])]

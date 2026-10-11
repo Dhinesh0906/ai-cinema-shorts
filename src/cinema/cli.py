@@ -14,6 +14,7 @@ from pathlib import Path
 import typer
 
 from .config import load_config
+from .storage.files import output_dir
 
 app = typer.Typer(help="Autonomous local AI cinematic shorts factory (Apple Silicon).", no_args_is_help=True)
 
@@ -240,7 +241,7 @@ def resume(job_id: str, detach: bool = typer.Option(False)) -> None:
     """Resume an interrupted or BLOCKED job, reusing every validated asset."""
     from .orchestrator import Orchestrator
     if detach:
-        _detach(["resume-internal", job_id])
+        _detach(["resume", job_id])  # full resume (fresh retries for BLOCKED assets), in the background
         typer.echo(f"resuming {job_id} in background")
         return
     _sigterm_as_interrupt()
@@ -278,7 +279,7 @@ def status(job_id: str, events: int = 15) -> None:
            "attention": [{k: a[k] for k in ("asset_id", "status", "attempts", "feedback")} for a in assets
                          if a["status"] in ("RETRY_PENDING", "BLOCKED", "FAILED")],
            "recent_events": [f"{e['created_at']} {e['level']}: {e['message']}" for e in db.events(job_id, events)],
-           "output": str(cfg.root / "outputs" / job_id)})
+           "output": str(output_dir(cfg.root, job_id))})
 
 
 @app.command()
